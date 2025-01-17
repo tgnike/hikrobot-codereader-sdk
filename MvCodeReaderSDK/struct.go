@@ -185,3 +185,19 @@ type MvFrameOut struct {
 	FrameInfo MVFrameOutInfo
 	Res       [16]uint32
 }
+
+// MV_CODEREADER_STRINGVALUE
+type MvCodeReaderStringValue struct {
+	CurValue  [256]byte
+	MaxLength int64
+	Res       [2]uint32
+}
+
+// MV_CODEREADER_INTVALUE_EX
+type MvCodeReaderIntValueEx struct {
+	CurValue int64
+	Max      int64
+	Min      int64
+	Inc      int64
+	Res      [16]uint32
+}

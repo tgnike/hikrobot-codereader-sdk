@@ -185,8 +185,73 @@ func (d *Device) GetOneFrameTimeoutEx2(pData *[MaxFrameSize]byte, timeOut uint32
 	return code, pFrameInfo
 }
 
+func (d *Device) SetIntValue(key string, value int64) error {
+	code := Err(int32(C.MV_CODEREADER_SetIntValue(d.handle, C.CString(key), C.longlong(value))))
+	return code
+}
+
+func (d *Device) GetIntValue(key string) (int64, error) {
+
+	r := &MvCodeReaderIntValueEx{}
+
+	err := Err(int32(C.MV_CODEREADER_GetIntValue(d.handle, C.CString(key), (*C.MV_CODEREADER_INTVALUE_EX)(unsafe.Pointer(r)))))
+
+	if err != nil {
+		return -1, err
+	}
+
+	return r.CurValue, err
+}
+
 func (d *Device) SetEnumValue(key string, value uint32) error {
 	code := Err(int32(C.MV_CODEREADER_SetEnumValue(d.handle, C.CString(key), C.uint(value))))
+	return code
+}
+
+func (d *Device) GetStringValue(key string) (string, error) {
+
+	r := &MvCodeReaderStringValue{}
+
+	err := Err(int32(C.MV_CODEREADER_GetStringValue(d.handle, C.CString(key), (*C.MV_CODEREADER_STRINGVALUE)(unsafe.Pointer(r)))))
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(r.CurValue[:r.MaxLength]), err
+}
+
+func (d *Device) SetStringValue(key string, value string) error {
+	code := Err(int32(C.MV_CODEREADER_SetStringValue(d.handle, C.CString(key), C.CString(value))))
+	return code
+}
+
+func (d *Device) GetBoolValue(key string) (bool, error) {
+
+	var res bool
+
+	err := Err(int32(C.MV_CODEREADER_GetBoolValue(d.handle, C.CString(key), (*C.bool)(unsafe.Pointer(&res)))))
+
+	return res, err
+}
+
+func (d *Device) SetBoolValue(key string, value bool) error {
+
+	var i int8
+
+	i = 0
+
+	if value {
+		i = 1
+	}
+
+	code := Err(int32(C.MV_CODEREADER_SetBoolValue(d.handle, C.CString(key), C.bool(i))))
+	return code
+}
+
+func (d *Device) SetCommandValue(key string) error {
+
+	code := Err(int32(C.MV_CODEREADER_SetCommandValue(d.handle, C.CString(key))))
 	return code
 }
 
