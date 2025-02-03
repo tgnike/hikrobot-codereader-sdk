@@ -6,6 +6,7 @@ import "unsafe"
 const MvMaxDeviceNum = 256
 const InfoMaxBufferSize = 64
 const MaxBcrCodeLen = 256
+const MaxBcrCodeLenEx = 4096
 
 type MvCodeReaderDeviceInfo struct {
 	MajorVer     uint16
@@ -148,16 +149,83 @@ type MVFrameOutInfoEx struct {
 	Reserved  [3]uint32
 }
 
+type MVImageOutInfoEx2 struct {
+	Width     uint16
+	Height    uint16
+	PixelType uint32
+
+	TriggerIndex  uint32
+	FrameNum      uint32
+	FrameLen      uint32
+	TimeStampHigh uint32
+	TimeStampLow  uint32
+	FlaseTrigger  uint32
+	FocusScore    uint32
+	IsGetCode     bool
+	CodeListEx    *MvResultBcrEx
+	WaybillList   MvWaybill
+
+	EventID   uint32
+	ChannelID uint32
+	ImageCost uint32
+
+	UnparsedBcrList []uint
+	UnparsedOcrList []uint
+
+	WholeFlag uint16
+	Res       uint16
+	Reserved  [25]uint
+}
+
 type MvWaybill struct {
 }
 
 type MvResultBcr struct {
 	CodeNum   uint32
-	stBcrInfo [200]MvBcrInfo
+	BcrInfo   [200]MvBcrInfo
 	NoReadNum uint16
 	Res       uint16
 	Reserved  [3]uint32
 }
+
+type MvResultBcrEx struct {
+	CodeNum   uint32
+	BcrInfoEx [200]MvBcrInfoEx
+	NoReadNum uint16
+	Res       uint16
+	Reserved  [7]uint32
+}
+
+type MvBcrInfoEx struct {
+	ID          uint32
+	Code        [MaxBcrCodeLen]byte
+	Len         uint32
+	BarType     uint32
+	Pt          [4]MvPoint
+	CodeQuality MvCodeInfo
+
+	Angle         int32
+	MainPackageId uint32
+	SubPackageId  uint32
+	AppearCount   uint16
+	PPM           uint16
+	AlgoCost      uint16
+	Sharpness     uint16
+
+	IsGetQuality       bool
+	IDRScore           uint32
+	D1IsGetQuality     uint32
+	TotalProcCost      uint32
+	TriggerTimeTvHigh  uint32
+	TriggerTimeTvLow   uint32
+	TriggerTimeUtvHigh uint32
+	TriggerTimeUtvLow  uint32
+	PollingIndex       uint16
+	Res                uint16
+	Reserved           [23]uint32
+}
+
+type MvCodeInfo struct{}
 
 type MvBcrInfo struct {
 	ID      uint32

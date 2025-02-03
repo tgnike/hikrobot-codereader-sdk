@@ -2,80 +2,187 @@ package MvCodeReaderSDK
 
 /*
 #cgo CFLAGS: -I../include
+#include <stdio.h>
+#include <stdlib.h>
 #cgo windows amd64 LDFLAGS: -L${SRCDIR}/../lib/win/64 -lMvCodeReaderCtrl -static
 #include "MvCodeReaderCtrl.h"
 */
 import "C"
 import (
-	"bufio"
 	"log"
-	"os"
+	"sync"
 	"unsafe"
 )
 
+type CallBackResultEx2 struct {
+	Lenth     int
+	Image     []byte
+	FrameInfo *MVImageOutInfoEx2
+}
+
+type CallBackRegister struct {
+	results []chan CallBackResultEx2
+	mutex   sync.Mutex
+}
+
+func (c *CallBackRegister) NewCallback() (int, chan CallBackResultEx2) {
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	ch := make(chan CallBackResultEx2, 10)
+	c.results = append(c.results, ch)
+
+	return len(c.results) - 1, ch
+
+}
+
+var callback = &CallBackRegister{results: make([]chan CallBackResultEx2, 0), mutex: sync.Mutex{}}
+
 //export go_callback_output
-func go_callback_output(pData *C.uchar, pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_INFO_EX, pUser unsafe.Pointer) {
+func go_callback_output(pData *C.uchar, pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_INFO_EX2, pUser unsafe.Pointer) {
 
-	stru := ((*MVFrameOutInfoEx)(unsafe.Pointer(pstFrameInfo)))
+	id := *(*int)(unsafe.Pointer(pUser))
+	rLen := len(callback.results)
 
-	for i, v := range stru.CodeList.stBcrInfo {
-
-		if v.Len == 0 {
-			continue
-		}
-
-		code := v.Code[:v.Len]
-		log.Printf("%v code %v", i, string(code))
-
+	if id < 0 || id > rLen {
+		return
 	}
 
-	path := "C:/code/go/hikrobot-mvcodereader/cmd/code/d2.jpg"
+	ch := callback.results[id]
+
+	frameInfo := NewMVImageOutInfoEx2(pstFrameInfo)
+	lenth := int(frameInfo.FrameLen)
+
+	if lenth == 0 {
+		return
+	}
+
 	data := *((*[]byte)(unsafe.Pointer(&pData)))
-	lenth := int(stru.FrameLen)
 	image, err := getImageBytes(data, lenth)
 
 	if err != nil {
 		log.Print(err)
 	}
 
-	barcodes(pstFrameInfo)
-	if image != nil {
-		saveImage(path, image)
-	}
-
-	//err := os.WriteFile("C:/code/go/hikrobot-mvcodereader/cmd/code/d2.jpg", []byte(pk), 0644)
+	ch <- CallBackResultEx2{Image: image, FrameInfo: frameInfo}
 
 }
 
-func barcodes(pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_INFO_EX) {
+// Copy bytes with length
+func getImageBytes(data []byte, length int) ([]byte, error) {
 
-	codes := ((int)(pstFrameInfo.pstCodeList.nCodeNum))
+	i := data[:length]
+	var copyField = make([]byte, length)
+	copy(copyField, i)
 
-	log.Printf("codes %v", codes)
-
-}
-
-func getImageBytes(data []byte, lenth int) ([]byte, error) {
-
-	return data[:lenth], nil
+	return copyField, nil
 
 }
 
-func saveImage(path string, data []byte) {
+func CopyBarcodeResults(r *MVImageOutInfoEx2, s *C.MV_CODEREADER_IMAGE_OUT_INFO_EX2) {
 
-	f, err := os.Create(path)
-
-	if err != nil {
-		log.Printf("Create %v", err)
+	for i := 0; i < len(s.pstCodeListEx.stBcrInfoEx); i++ {
+		r.CodeListEx.BcrInfoEx[i] = NewMvBcrInfoEx(s.pstCodeListEx.stBcrInfoEx[i])
 	}
 
-	w := bufio.NewWriter(f)
-	_, err = w.Write(data)
+}
 
-	if err != nil {
-		log.Printf("WriteFile %v", err)
+func NewMVImageOutInfoEx2(pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_INFO_EX2) *MVImageOutInfoEx2 {
+
+	s := MVImageOutInfoEx2{}
+	s.Width = uint16(pstFrameInfo.nWidth)
+	s.Height = uint16(pstFrameInfo.nHeight)
+
+	s.PixelType = pstFrameInfo.enPixelType
+	s.TriggerIndex = uint32(pstFrameInfo.nTriggerIndex)
+	s.FrameNum = uint32(pstFrameInfo.nFrameNum)
+	s.FrameLen = uint32(pstFrameInfo.nFrameLen)
+	s.TimeStampHigh = uint32(pstFrameInfo.nTimeStampHigh)
+	s.TimeStampLow = uint32(pstFrameInfo.nTimeStampLow)
+	s.FlaseTrigger = uint32(pstFrameInfo.bFlaseTrigger)
+	s.FocusScore = uint32(pstFrameInfo.nFocusScore)
+	s.IsGetCode = GoBool(pstFrameInfo.bIsGetCode)
+	s.CodeListEx = NewMvResultBcrEx(pstFrameInfo.pstCodeListEx)
+	// //s.WaybillList
+	s.EventID = uint32(pstFrameInfo.nEventID)
+	s.ChannelID = uint32(pstFrameInfo.nChannelID)
+	s.ImageCost = uint32(pstFrameInfo.nImageCost)
+	// //s.UnparsedBcrList
+	// //s.UnparsedOcrList
+	s.WholeFlag = uint16(pstFrameInfo.nWholeFlag)
+	s.Res = uint16(pstFrameInfo.nRes)
+	// //s.Reserved = pstFrameInfo.nReserved
+
+	return &s
+}
+
+func NewMvResultBcrEx(c *C.MV_CODEREADER_RESULT_BCR_EX) *MvResultBcrEx {
+
+	g := &MvResultBcrEx{}
+	g.CodeNum = uint32(c.nCodeNum)
+	//g.NoReadNum = uint16(c.nNoReadNum)
+	// g.Res = uint16(c.nRes)
+
+	maxCodeInfo := int(g.CodeNum)
+
+	for i := 0; i < len(g.BcrInfoEx); i++ {
+
+		if i == maxCodeInfo {
+			break
+		}
+
+		g.BcrInfoEx[i] = NewMvBcrInfoEx(c.stBcrInfoEx[i])
 	}
 
-	w.Flush()
-	f.Close()
+	return g
+
+}
+
+func NewMvBcrInfoEx(c C.MV_CODEREADER_BCR_INFO_EX) MvBcrInfoEx {
+	g := MvBcrInfoEx{}
+	g.ID = uint32(c.nID)
+	g.Code = ([256]byte)(unsafe.Slice((*byte)(unsafe.Pointer(&c.chCode)), 256))
+
+	g.Len = uint32(c.nLen)
+
+	g.BarType = uint32(c.nBarType)
+	//g.Pt = ([4]MvPoint)(unsafe.Slice((*MvPoint)(unsafe.Pointer(&c.pt)), 4))
+	g.Pt = ([4]MvPoint)(make([]MvPoint, 4))
+
+	for i, p := range c.pt {
+
+		npt := MvPoint{X: int32(p.x), Y: int32(p.y)}
+
+		g.Pt[i] = npt
+
+	}
+	//g.CodeQuality  =([4]MvCodeInfo)(unsafe.Slice((*C.CodeQuality)(unsafe.Pointer(&c.chCode)), 256))
+
+	g.Angle = int32(c.nAngle)
+
+	g.MainPackageId = uint32(c.nMainPackageId)
+	g.SubPackageId = uint32(c.nSubPackageId)
+	g.AppearCount = uint16(c.sAppearCount)
+	g.PPM = uint16(c.sPPM)
+	g.AlgoCost = uint16(c.sAlgoCost)
+	g.Sharpness = uint16(c.sSharpness)
+
+	g.IsGetQuality = GoBool(c.bIsGetQuality)
+	g.IDRScore = uint32(c.nIDRScore)
+	g.D1IsGetQuality = uint32(c.n1DIsGetQuality)
+	g.TotalProcCost = uint32(c.nTotalProcCost)
+	g.TriggerTimeTvHigh = uint32(c.nTriggerTimeTvHigh)
+	g.TriggerTimeTvLow = uint32(c.nTriggerTimeTvLow)
+	g.TriggerTimeUtvHigh = uint32(c.nTriggerTimeUtvHigh)
+	g.TriggerTimeUtvLow = uint32(c.nTriggerTimeUtvLow)
+	g.PollingIndex = uint16(c.sPollingIndex)
+	//g.Res = uint16(c.sRes)
+	//g.Reserved = c.nReserved
+	return g
+
+}
+
+func GoBool(b C.bool) bool {
+	return b != 0
 }

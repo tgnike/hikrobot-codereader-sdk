@@ -239,32 +239,29 @@ func (d *Device) SetCommandValue(key string) error {
 	return code
 }
 
-func (d *Device) RegisterImageCallBack(path string) error {
+func (d *Device) RegisterImageCallBack() (chan CallBackResultEx2, error) {
 
-	cstr := C.CString(path)
-	pstr := unsafe.Pointer(cstr)
+	i, ch := callback.NewCallback()
 
-	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBack(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), pstr)))
+	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBack(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), unsafe.Pointer(&i))))
 
-	return code
+	return ch, code
 }
 
-func (d *Device) RegisterImageCallBackEx(path string) error {
+func (d *Device) RegisterImageCallBackEx() (chan CallBackResultEx2, error) {
 
-	cstr := C.CString(path)
-	pstr := unsafe.Pointer(cstr)
+	i, ch := callback.NewCallback()
 
-	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBackEx(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), pstr)))
+	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBackEx(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), unsafe.Pointer(&i))))
 
-	return code
+	return ch, code
 }
 
-func (d *Device) RegisterImageCallBackEx2(path string) error {
+func (d *Device) RegisterImageCallBackEx2() (chan CallBackResultEx2, error) {
 
-	cstr := C.CString(path)
-	pstr := unsafe.Pointer(cstr)
+	i, ch := callback.NewCallback()
 
-	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBackEx2(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), pstr)))
+	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBackEx2(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), unsafe.Pointer(&i))))
 
-	return code
+	return ch, code
 }
