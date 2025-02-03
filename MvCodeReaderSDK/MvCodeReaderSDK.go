@@ -21,22 +21,6 @@ import (
 	"unsafe"
 )
 
-// C 语言类型	CGO 类型	Go 语言类型
-// char	C.char	byte
-// singed char	C.schar	int8
-// unsigned char	C.uchar	uint8
-// short	C.short	int16
-// unsigned short	C.ushort	uint16
-// int	C.int	int32
-// unsigned int	C.uint	uint32
-// long	C.long	int32
-// unsigned long	C.ulong	uint32
-// long long int	C.longlong	int64
-// unsigned long long int	C.ulonglong	uint64
-// float	C.float	float32
-// double	C.double	float64
-// size_t	C.size_t	uint
-
 const MaxFrameSize = 10 * 1024 * 1024 * 6
 
 func GetSDKVersion() int32 {
@@ -58,7 +42,7 @@ func EnumDevices(nTLayerType uint32) ([]MvCodeReaderDeviceInfo, error) {
 	var res []MvCodeReaderDeviceInfo
 	num := int(uint32(pstDevList.nDeviceNum))
 	for i := 0; i < num; i++ {
-		res = append(res, *(*MvCodeReaderDeviceInfo)(unsafe.Pointer(pstDevList.pDeviceInfo[0])))
+		res = append(res, *(*MvCodeReaderDeviceInfo)(unsafe.Pointer(pstDevList.pDeviceInfo[i])))
 	}
 
 	return res, nil
@@ -74,10 +58,10 @@ func EnumCodeReader() ([]MvCodeReaderDeviceInfo, error) {
 		return nil, err
 	}
 
-	var res []MvCodeReaderDeviceInfo
 	num := int(uint32(pstDevList.nDeviceNum))
+	res := make([]MvCodeReaderDeviceInfo, num)
 	for i := 0; i < num; i++ {
-		res = append(res, *(*MvCodeReaderDeviceInfo)(unsafe.Pointer(pstDevList.pDeviceInfo[0])))
+		res[i] = *(*MvCodeReaderDeviceInfo)(unsafe.Pointer(pstDevList.pDeviceInfo[i]))
 	}
 
 	return res, nil
@@ -96,7 +80,7 @@ func EnumIdDevices() ([]MvCodeReaderDeviceInfo, error) {
 	var res []MvCodeReaderDeviceInfo
 	num := int(uint32(pstDevList.nDeviceNum))
 	for i := 0; i < num; i++ {
-		res = append(res, *(*MvCodeReaderDeviceInfo)(unsafe.Pointer(pstDevList.pDeviceInfo[0])))
+		res = append(res, *(*MvCodeReaderDeviceInfo)(unsafe.Pointer(pstDevList.pDeviceInfo[i])))
 	}
 
 	return res, nil
