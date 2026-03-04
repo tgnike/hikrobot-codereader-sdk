@@ -23,3 +23,7 @@ go.work.sum
 
 # env file
 .env
+*.intlog
+/cmd/code/MvSDKLog
+*.jpg
+/cmd/frame/MvSDKLog
