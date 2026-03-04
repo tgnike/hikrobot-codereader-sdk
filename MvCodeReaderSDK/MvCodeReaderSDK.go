@@ -10,6 +10,7 @@ package MvCodeReaderSDK
 // in another separate C file to avoid the multiple definition
 // errors, however, using "static inline" is a nice workaround
 // for simple functions like this one.
+void go_callback_output(unsigned char * pData, MV_CODEREADER_IMAGE_OUT_INFO_EX2* pstFrameInfo, void* pUser);
 
 void __stdcall CallBackGetOneFrameTimeoutEx2(unsigned char * pData, MV_CODEREADER_IMAGE_OUT_INFO_EX2* pstFrameInfo, void* pUser) {
 	go_callback_output(pData, pstFrameInfo, pUser);
@@ -38,11 +39,18 @@ func EnumDevices(nTLayerType uint32) ([]MvCodeReaderDeviceInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	var res []MvCodeReaderDeviceInfo
 	num := int(uint32(pstDevList.nDeviceNum))
+	res := make([]MvCodeReaderDeviceInfo, num)
+
 	for i := 0; i < num; i++ {
-		res = append(res, *(*MvCodeReaderDeviceInfo)(unsafe.Pointer(pstDevList.pDeviceInfo[i])))
+
+		pdi := pstDevList.pDeviceInfo[i]
+
+		devInfo := unsafe.Pointer(pdi)
+		d := (*MvCodeReaderDeviceInfo)(devInfo)
+
+		res[i] = *d
+
 	}
 
 	return res, nil
@@ -61,7 +69,13 @@ func EnumCodeReader() ([]MvCodeReaderDeviceInfo, error) {
 	num := int(uint32(pstDevList.nDeviceNum))
 	res := make([]MvCodeReaderDeviceInfo, num)
 	for i := 0; i < num; i++ {
-		res[i] = *(*MvCodeReaderDeviceInfo)(unsafe.Pointer(pstDevList.pDeviceInfo[i]))
+
+		pdi := pstDevList.pDeviceInfo[i]
+
+		devInfo := unsafe.Pointer(pdi)
+		d := (*MvCodeReaderDeviceInfo)(devInfo)
+
+		res[i] = *d
 	}
 
 	return res, nil
@@ -241,27 +255,27 @@ func (d *Device) SetCommandValue(key string) error {
 
 func (d *Device) RegisterImageCallBack() (chan CallBackResultEx2, error) {
 
-	i, ch := callback.NewCallback()
+	ch := callback.NewCallback()
 
-	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBack(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), unsafe.Pointer(&i))))
+	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBack(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), d.handle)))
 
 	return ch, code
 }
 
 func (d *Device) RegisterImageCallBackEx() (chan CallBackResultEx2, error) {
 
-	i, ch := callback.NewCallback()
+	ch := callback.NewCallback()
 
-	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBackEx(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), unsafe.Pointer(&i))))
+	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBackEx(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), d.handle)))
 
 	return ch, code
 }
 
 func (d *Device) RegisterImageCallBackEx2() (chan CallBackResultEx2, error) {
 
-	i, ch := callback.NewCallback()
+	ch := callback.NewCallback()
 
-	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBackEx2(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), unsafe.Pointer(&i))))
+	code := Err(int32(C.MV_CODEREADER_RegisterImageCallBackEx2(d.handle, (*[0]byte)(C.CallBackGetOneFrameTimeoutEx2), d.handle)))
 
 	return ch, code
 }

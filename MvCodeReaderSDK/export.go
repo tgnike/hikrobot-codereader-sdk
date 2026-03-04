@@ -10,7 +10,6 @@ package MvCodeReaderSDK
 import "C"
 import (
 	"log"
-	"sync"
 	"unsafe"
 )
 
@@ -21,35 +20,31 @@ type CallBackResultEx2 struct {
 }
 
 type CallBackRegister struct {
-	results []chan CallBackResultEx2
-	mutex   sync.Mutex
+	results chan CallBackResultEx2
 }
 
-func (c *CallBackRegister) NewCallback() (int, chan CallBackResultEx2) {
+func (c *CallBackRegister) NewCallback() chan CallBackResultEx2 {
 
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	ch := make(chan CallBackResultEx2, 10)
-	c.results = append(c.results, ch)
-
-	return len(c.results) - 1, ch
+	return c.results
 
 }
 
-var callback = &CallBackRegister{results: make([]chan CallBackResultEx2, 0), mutex: sync.Mutex{}}
+var callback = &CallBackRegister{results: make(chan CallBackResultEx2, 0)}
 
 //export go_callback_output
 func go_callback_output(pData *C.uchar, pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_INFO_EX2, pUser unsafe.Pointer) {
 
-	id := *(*int)(unsafe.Pointer(pUser))
-	rLen := len(callback.results)
+	log.Print("MvCodeReaderSDK callback received")
 
-	if id < 0 || id > rLen {
+	id := *(*int)(unsafe.Pointer(pUser))
+
+	if id < 0 {
+
+		callback.results <- CallBackResultEx2{}
 		return
 	}
 
-	ch := callback.results[id]
+	ch := callback.results
 
 	frameInfo := NewMVImageOutInfoEx2(pstFrameInfo)
 	lenth := int(frameInfo.FrameLen)
@@ -65,7 +60,11 @@ func go_callback_output(pData *C.uchar, pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_
 		log.Print(err)
 	}
 
+	log.Print("MvCodeReaderSDK callback send to channel")
+
 	ch <- CallBackResultEx2{Image: image, FrameInfo: frameInfo}
+
+	log.Print("MvCodeReaderSDK callback end")
 
 }
 
