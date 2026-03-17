@@ -10,7 +10,7 @@ package MvCodeReaderSDK
 // in another separate C file to avoid the multiple definition
 // errors, however, using "static inline" is a nice workaround
 // for simple functions like this one.
-void go_callback_output(unsigned char * pData, MV_CODEREADER_IMAGE_OUT_INFO_EX2* pstFrameInfo, void* pUser);
+extern void go_callback_output(unsigned char * pData, MV_CODEREADER_IMAGE_OUT_INFO_EX2* pstFrameInfo, void* pUser);
 
 void __stdcall CallBackGetOneFrameTimeoutEx2(unsigned char * pData, MV_CODEREADER_IMAGE_OUT_INFO_EX2* pstFrameInfo, void* pUser) {
 	go_callback_output(pData, pstFrameInfo, pUser);
