@@ -9,7 +9,6 @@ package MvCodeReaderSDK
 */
 import "C"
 import (
-	"log"
 	"unsafe"
 )
 
@@ -34,8 +33,6 @@ var callback = &CallBackRegister{results: make(chan CallBackResultEx2, 0)}
 //export go_callback_output
 func go_callback_output(pData *C.uchar, pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_INFO_EX2, pUser unsafe.Pointer) {
 
-	log.Print("MvCodeReaderSDK callback received")
-
 	id := *(*int)(unsafe.Pointer(pUser))
 
 	if id < 0 {
@@ -57,14 +54,12 @@ func go_callback_output(pData *C.uchar, pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_
 	image, err := getImageBytes(data, lenth)
 
 	if err != nil {
-		log.Print(err)
+		//log.Print(err)
+		ch <- CallBackResultEx2{Image: image, FrameInfo: frameInfo}
+		return
 	}
 
-	log.Print("MvCodeReaderSDK callback send to channel")
-
 	ch <- CallBackResultEx2{Image: image, FrameInfo: frameInfo}
-
-	log.Print("MvCodeReaderSDK callback end")
 
 }
 

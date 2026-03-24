@@ -18,7 +18,6 @@ void __stdcall CallBackGetOneFrameTimeoutEx2(unsigned char * pData, MV_CODEREADE
 */
 import "C"
 import (
-	"log"
 	"unsafe"
 )
 
@@ -167,9 +166,9 @@ func (d *Device) GetOneFrameTimeoutEx(pData *[MaxFrameSize]byte, timeOut uint32)
 
 	code := Err(int32(C.MV_CODEREADER_GetOneFrameTimeoutEx(d.handle, p, (*C.MV_CODEREADER_IMAGE_OUT_INFO_EX)(unsafe.Pointer(&pFrameInfo)), C.uint(timeOut))))
 
-	pd := *((*[]byte)(unsafe.Pointer(p)))
+	// pd := *((*[]byte)(unsafe.Pointer(p)))
 
-	log.Printf("%v", pd)
+	// log.Printf("%v", pd)
 
 	return code, pFrameInfo
 }
