@@ -256,7 +256,7 @@ type MvBcrInfo struct {
 	Code    [MaxBcrCodeLen]byte
 	Len     uint32
 	BarType uint32
-	pt      [4]MvPoint
+	Pt      [4]MvPoint
 
 	Angle         int32
 	MainPackageId uint32

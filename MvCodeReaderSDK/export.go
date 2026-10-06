@@ -138,7 +138,7 @@ func NewMvBcrInfo(c C.MV_CODEREADER_BCR_INFO) MvBcrInfo {
 	g.BarType = uint32(c.nBarType)
 
 	for i, p := range c.pt {
-		g.pt[i] = MvPoint{X: int32(p.x), Y: int32(p.y)}
+		g.Pt[i] = MvPoint{X: int32(p.x), Y: int32(p.y)}
 	}
 
 	g.Angle = int32(c.nAngle)
