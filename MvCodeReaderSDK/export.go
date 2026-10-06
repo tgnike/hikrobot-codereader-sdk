@@ -50,28 +50,106 @@ func go_callback_output(pData *C.uchar, pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_
 		return
 	}
 
-	data := *((*[]byte)(unsafe.Pointer(&pData)))
-	image, err := getImageBytes(data, lenth)
-
-	if err != nil {
-		//log.Print(err)
-		ch <- CallBackResultEx2{Image: image, FrameInfo: frameInfo}
-		return
-	}
+	image := frameBytes(pData, uint32(lenth))
 
 	ch <- CallBackResultEx2{Image: image, FrameInfo: frameInfo}
 
 }
 
-// Copy bytes with length
-func getImageBytes(data []byte, length int) ([]byte, error) {
+// frameBytes copies the SDK-owned image buffer into Go memory.
+func frameBytes(pData *C.uchar, length uint32) []byte {
+	if pData == nil || length == 0 {
+		return nil
+	}
+	return C.GoBytes(unsafe.Pointer(pData), C.int(length))
+}
 
-	i := data[:length]
-	var copyField = make([]byte, length)
-	copy(copyField, i)
+func NewMVImageOutInfo(pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_INFO) *MVImageOutInfo {
 
-	return copyField, nil
+	s := MVImageOutInfo{}
+	s.Width = uint16(pstFrameInfo.nWidth)
+	s.Height = uint16(pstFrameInfo.nHeight)
+	s.PixelType = uint32(pstFrameInfo.enPixelType)
+	s.TriggerIndex = uint32(pstFrameInfo.nTriggerIndex)
+	s.FrameNum = uint32(pstFrameInfo.nFrameNum)
+	s.FrameLen = uint32(pstFrameInfo.nFrameLen)
+	s.TimeStampHigh = uint32(pstFrameInfo.nTimeStampHigh)
+	s.TimeStampLow = uint32(pstFrameInfo.nTimeStampLow)
+	s.ResultType = uint32(pstFrameInfo.nResultType)
+	s.Result = C.GoBytes(unsafe.Pointer(&pstFrameInfo.chResult[0]), C.int(len(pstFrameInfo.chResult)))
+	s.IsGetCode = GoBool(pstFrameInfo.bIsGetCode)
+	s.FlaseTrigger = uint32(pstFrameInfo.bFlaseTrigger)
+	s.FocusScore = uint32(pstFrameInfo.nFocusScore)
+	s.ChannelID = uint32(pstFrameInfo.nChannelID)
+	s.ImageCost = uint32(pstFrameInfo.nImageCost)
+	s.WholeFlag = uint16(pstFrameInfo.nWholeFlag)
+	s.Res = uint16(pstFrameInfo.nRes)
 
+	return &s
+}
+
+func NewMVFrameOutInfoEx(pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_INFO_EX) *MVFrameOutInfoEx {
+
+	s := MVFrameOutInfoEx{}
+	s.Width = uint16(pstFrameInfo.nWidth)
+	s.Height = uint16(pstFrameInfo.nHeight)
+	s.PixelType = uint32(pstFrameInfo.enPixelType)
+	s.TriggerIndex = uint32(pstFrameInfo.nTriggerIndex)
+	s.FrameNum = uint32(pstFrameInfo.nFrameNum)
+	s.FrameLen = uint32(pstFrameInfo.nFrameLen)
+	s.TimeStampHigh = uint32(pstFrameInfo.nTimeStampHigh)
+	s.TimeStampLow = uint32(pstFrameInfo.nTimeStampLow)
+	s.FlaseTrigger = uint32(pstFrameInfo.bFlaseTrigger)
+	s.FocusScore = uint32(pstFrameInfo.nFocusScore)
+	s.IsGetCode = GoBool(pstFrameInfo.bIsGetCode)
+	s.CodeList = NewMvResultBcr(pstFrameInfo.pstCodeList)
+	s.EventID = uint32(pstFrameInfo.nEventID)
+	s.ChannelID = uint32(pstFrameInfo.nChannelID)
+	s.ImageCost = uint32(pstFrameInfo.nImageCost)
+	s.WholeFlag = uint16(pstFrameInfo.nWholeFlag)
+	s.Res = uint16(pstFrameInfo.nRes)
+
+	return &s
+}
+
+func NewMvResultBcr(c *C.MV_CODEREADER_RESULT_BCR) *MvResultBcr {
+
+	if c == nil {
+		return nil
+	}
+
+	g := &MvResultBcr{}
+	g.CodeNum = uint32(c.nCodeNum)
+	g.NoReadNum = uint16(c.nNoReadNum)
+	g.Res = uint16(c.nRes)
+
+	for i := 0; i < len(g.BcrInfo) && i < int(g.CodeNum); i++ {
+		g.BcrInfo[i] = NewMvBcrInfo(c.stBcrInfo[i])
+	}
+
+	return g
+}
+
+func NewMvBcrInfo(c C.MV_CODEREADER_BCR_INFO) MvBcrInfo {
+	g := MvBcrInfo{}
+	g.ID = uint32(c.nID)
+	g.Code = ([256]byte)(unsafe.Slice((*byte)(unsafe.Pointer(&c.chCode)), 256))
+	g.Len = uint32(c.nLen)
+	g.BarType = uint32(c.nBarType)
+
+	for i, p := range c.pt {
+		g.pt[i] = MvPoint{X: int32(p.x), Y: int32(p.y)}
+	}
+
+	g.Angle = int32(c.nAngle)
+	g.MainPackageId = uint32(c.nMainPackageId)
+	g.SubPackageId = uint32(c.nSubPackageId)
+	g.AppearCount = uint16(c.sAppearCount)
+	g.PPM = uint16(c.sPPM)
+	g.AlgoCost = uint16(c.sAlgoCost)
+	g.Sharpness = uint16(c.sSharpness)
+
+	return g
 }
 
 func CopyBarcodeResults(r *MVImageOutInfoEx2, s *C.MV_CODEREADER_IMAGE_OUT_INFO_EX2) {
@@ -112,6 +190,10 @@ func NewMVImageOutInfoEx2(pstFrameInfo *C.MV_CODEREADER_IMAGE_OUT_INFO_EX2) *MVI
 }
 
 func NewMvResultBcrEx(c *C.MV_CODEREADER_RESULT_BCR_EX) *MvResultBcrEx {
+
+	if c == nil {
+		return nil
+	}
 
 	g := &MvResultBcrEx{}
 	g.CodeNum = uint32(c.nCodeNum)

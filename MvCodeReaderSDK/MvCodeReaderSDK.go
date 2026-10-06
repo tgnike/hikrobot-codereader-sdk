@@ -148,38 +148,40 @@ func (d *Device) StopGrabbing() error {
 	return Err(int32(C.MV_CODEREADER_StopGrabbing(d.handle)))
 }
 
-func (d *Device) GetOneFrameTimeout(pData *[]byte, timeOut uint32) (error, MVFrameOutInfo) {
-	var pFrameInfo MVFrameOutInfo
+// GetOneFrameTimeout returns a copy of the next frame and its info.
+func (d *Device) GetOneFrameTimeout(timeOut uint32) ([]byte, *MVImageOutInfo, error) {
+	var pData *C.uchar
+	var info C.MV_CODEREADER_IMAGE_OUT_INFO
 
-	var p = (**C.uchar)(unsafe.Pointer(pData))
+	if err := Err(int32(C.MV_CODEREADER_GetOneFrameTimeout(d.handle, &pData, &info, C.uint(timeOut)))); err != nil {
+		return nil, nil, err
+	}
 
-	code := Err(int32(C.MV_CODEREADER_GetOneFrameTimeout(d.handle, p, (*C.MV_CODEREADER_IMAGE_OUT_INFO)(unsafe.Pointer(&pFrameInfo)), C.uint(timeOut))))
-	return code, pFrameInfo
+	return frameBytes(pData, uint32(info.nFrameLen)), NewMVImageOutInfo(&info), nil
 }
 
-func (d *Device) GetOneFrameTimeoutEx(pData *[MaxFrameSize]byte, timeOut uint32) (error, MVFrameOutInfoEx) {
-	var pFrameInfo MVFrameOutInfoEx
-	bb := make([]byte, MaxFrameSize)
-	b := C.CBytes(bb)
+// GetOneFrameTimeoutEx returns a copy of the next frame and its info.
+func (d *Device) GetOneFrameTimeoutEx(timeOut uint32) ([]byte, *MVFrameOutInfoEx, error) {
+	var pData *C.uchar
+	var info C.MV_CODEREADER_IMAGE_OUT_INFO_EX
 
-	var p = (**C.uchar)(unsafe.Pointer(&b))
+	if err := Err(int32(C.MV_CODEREADER_GetOneFrameTimeoutEx(d.handle, &pData, &info, C.uint(timeOut)))); err != nil {
+		return nil, nil, err
+	}
 
-	code := Err(int32(C.MV_CODEREADER_GetOneFrameTimeoutEx(d.handle, p, (*C.MV_CODEREADER_IMAGE_OUT_INFO_EX)(unsafe.Pointer(&pFrameInfo)), C.uint(timeOut))))
-
-	// pd := *((*[]byte)(unsafe.Pointer(p)))
-
-	// log.Printf("%v", pd)
-
-	return code, pFrameInfo
+	return frameBytes(pData, uint32(info.nFrameLen)), NewMVFrameOutInfoEx(&info), nil
 }
 
-func (d *Device) GetOneFrameTimeoutEx2(pData *[MaxFrameSize]byte, timeOut uint32) (error, MVFrameOutInfo) {
-	var pFrameInfo MVFrameOutInfo
+// GetOneFrameTimeoutEx2 returns a copy of the next frame and its info.
+func (d *Device) GetOneFrameTimeoutEx2(timeOut uint32) ([]byte, *MVImageOutInfoEx2, error) {
+	var pData *C.uchar
+	var info C.MV_CODEREADER_IMAGE_OUT_INFO_EX2
 
-	var p = (**C.uchar)(unsafe.Pointer(pData))
+	if err := Err(int32(C.MV_CODEREADER_GetOneFrameTimeoutEx2(d.handle, &pData, &info, C.uint(timeOut)))); err != nil {
+		return nil, nil, err
+	}
 
-	code := Err(int32(C.MV_CODEREADER_GetOneFrameTimeoutEx2(d.handle, p, (*C.MV_CODEREADER_IMAGE_OUT_INFO_EX2)(unsafe.Pointer(&pFrameInfo)), C.uint(timeOut))))
-	return code, pFrameInfo
+	return frameBytes(pData, uint32(info.nFrameLen)), NewMVImageOutInfoEx2(&info), nil
 }
 
 func (d *Device) SetIntValue(key string, value int64) error {

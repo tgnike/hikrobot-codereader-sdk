@@ -122,6 +122,30 @@ type MVFrameOutInfo struct {
 	Reserved [34]uint32
 }
 
+// MV_CODEREADER_IMAGE_OUT_INFO
+type MVImageOutInfo struct {
+	Width     uint16
+	Height    uint16
+	PixelType uint32
+
+	TriggerIndex  uint32
+	FrameNum      uint32
+	FrameLen      uint32
+	TimeStampHigh uint32
+	TimeStampLow  uint32
+
+	ResultType uint32
+	Result     []byte // raw chResult, layout depends on ResultType
+	IsGetCode  bool
+
+	FlaseTrigger uint32
+	FocusScore   uint32
+	ChannelID    uint32
+	ImageCost    uint32
+	WholeFlag    uint16
+	Res          uint16
+}
+
 type MVFrameOutInfoEx struct {
 	Width     uint16
 	Height    uint16

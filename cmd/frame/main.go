@@ -10,8 +10,6 @@ import (
 
 func main() {
 
-	var b [MvCodeReaderSDK.MaxFrameSize]byte
-
 	dir := filepath.Dir(os.Args[0])
 	imath := filepath.Join(dir, "test.jpg")
 
@@ -72,7 +70,7 @@ func main() {
 	handle.StartGrabbing()
 
 	log.Print("GetOneFrameTimeout")
-	err, info := handle.GetOneFrameTimeoutEx(&b, 500)
+	b, info, err := handle.GetOneFrameTimeoutEx(500)
 	//errcode = handle.RegisterImageCallBackEx(imath)
 
 	log.Print("StopGrabbing")
@@ -85,10 +83,10 @@ func main() {
 
 	log.Printf("frame len %v, %s", info.FrameLen, imath)
 
-	// err := os.WriteFile(imath, b[:info.FrameLen], 0644)
+	err = os.WriteFile(imath, b, 0644)
 
-	// if err != nil {
-	// 	log.Printf("WriteFile %v", err)
-	// }
+	if err != nil {
+		log.Printf("WriteFile %v", err)
+	}
 
 }
